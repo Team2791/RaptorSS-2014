@@ -31,6 +31,11 @@ public class BasicPID {
         m_i = i;
         m_d = d;
     }
+    public void changeGains(double p, double i, double d) {
+        m_p = p;
+        m_i = i;
+        m_d = d;
+    }
     
     public void setSetPoint(double setPoint) {m_setPoint = setPoint;}
     public void setMinOutput(double min) {m_minOutput = min;}

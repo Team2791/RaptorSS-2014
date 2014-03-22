@@ -23,6 +23,10 @@ public class FloppityPID extends BasicPID {
         deadTimeTimer.start();
     }
     
+    public void changeDeadzone(double deadZone) {
+        m_deadZone = deadZone;
+    }
+    
     public double updateAndGetOutput(double currentValue) {
         double normalOutput = super.updateAndGetOutput(currentValue);
         if(deadTimeTimer.get() < m_deadTime) // if jut hit setpoint and dead time still counting return 0

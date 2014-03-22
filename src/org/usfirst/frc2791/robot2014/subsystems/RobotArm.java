@@ -5,13 +5,14 @@
 package org.usfirst.frc2791.robot2014.subsystems;
 
 import edu.wpi.first.wpilibj.AnalogChannel;
+import edu.wpi.first.wpilibj.CounterBase;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.usfirst.frc2791.robot2014.BasicPID;
 import org.usfirst.frc2791.robot2014.FloppityPID;
 import edu.wpi.first.wpilibj.templates.Robot2014;
-import java.util.Vector;
 
 /**
  * For now I'm going to write this class like the drive train class because it is not
@@ -25,9 +26,9 @@ import java.util.Vector;
 public class RobotArm extends Team2791Subsystem {
     public static SpeedController armMotor;
     //FOR NOW ASSUME ENCODER THIS LIKELY WILL CHANGE TO AN ANALOG ABSOLUTE SENSOR!!!!
-    public static AnalogChannel absEncoder;
-    //pratice bot angle offset 107.0
-    //flight bot offset of 39.0 (should put these as prefs)
+    public static AnalogChannel armPot;
+    public static Encoder winchEncoder;
+    private double winchEncoderOffset = 0.0;
     //reading = sensorRaw - offset
     static double MIN_ANGLE = Robot2014.getDoubleAutoPut("Arm-Min_Angle",3.0);
     static double MAX_ANGLE = Robot2014.getDoubleAutoPut("Arm-Max_Angle",110.0);
@@ -35,16 +36,16 @@ public class RobotArm extends Team2791Subsystem {
     //offset is subtracted
     
 //    public static BasicPID armPID;
-    public static FloppityPID armPID;
+    public FloppityPID armPID;
     
     //these are the shooter PID constants
     //this is the tollerence that the wheel speed has to be within to be considered "good"
-    private static double PID_P = 0.075, PID_I = 0.01, PID_D = 0.007, PID_DEADZONE = 3; //plus or minus
-    private static double PID_DEADTIME = 0.0;
+    private double PID_P = 0.075, PID_I = 0.01, PID_D = 0.007, PID_DEADZONE = 3; //plus or minus
+    private double PID_DEADTIME = 0.0;
 //    PID_P = 0.15, PID_I = 0.0ejeen  5, PID_D = 0.005;
     
     //this var helps the manual control code play nice with the PID code
-    private static boolean usePID = false;
+    private boolean usePID = false;
     
     //this is an array of presets
     //the presets are as follows: AUTON_SHOT, LOADING, TELEOP_BACK_SHOT
@@ -52,19 +53,22 @@ public class RobotArm extends Team2791Subsystem {
     private static final double[] PRESET_VALUES = {22.5, 67.0, 90.0, 7.0};
     public boolean nearShooter = false;
     //debug stuff
-    private static double lastAngle = 0;
-    private static int sensorMessedUpCount = 0;
-    private static final boolean angleSensorBrokenHard = true;
-    private static boolean angleSensorBrokenSoft = false;
+    private double lastAngle = 0;
+    private int sensorMessedUpCount = 0;
+    private final boolean angleSensorBrokenHard = true;
+    private boolean angleSensorBrokenSoft = false;
     
     
     public RobotArm() {
      //init the motors
-        armMotor = new Victor(1, 3); //motor 7
-        //look into putting this on the dashboard
+        armMotor = new Victor(1, 3); //motor 3
         
+        winchEncoder =  new Encoder(10, 11, false, CounterBase.EncodingType.k4X);
+        //pulses per rotation, gear reduction downstream of the encoder, degrees per rotation placeholder)
+        winchEncoder.setDistancePerPulse(128 * 64/20 * 100.0);
+        calibrateWinchEncoder();
         
-        absEncoder = new AnalogChannel(1);
+        armPot = new AnalogChannel(1);
         
         PID_P = Robot2014.getDoubleAutoPut("Arm-PID_P",0.0);
         PID_I = Robot2014.getDoubleAutoPut("Arm-PID_I",0.0);
@@ -81,11 +85,32 @@ public class RobotArm extends Team2791Subsystem {
         
     }
     
+    private void calibrateWinchEncoder() {
+        winchEncoder.reset();
+        winchEncoderOffset = getArmAngle();
+    }
+    
     public void run(){
 //        if(Robot2014.getBoolAutoPut("Arm-Sensor broken",false)) {
         if(angleSensorBrokenHard || angleSensorBrokenSoft) {
             usePID = false;
         } else {
+            // if there is a large difference between the arm angle and winch angle
+            // that means there's slack in the rope, change PID gains
+            if(getWinchArmDifference() > 3.0) {
+                PID_P = Robot2014.prefs.getDouble("Arm-PID_P_WITH_SLACK",0.0);
+                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
+                armPID.changeGains(PID_P, 0.0, 0.0);
+                armPID.changeDeadzone(PID_DEADZONE);
+                armPID.reset();
+            } else { //normal PID gains
+                PID_P = Robot2014.prefs.getDouble("Arm-PID_P",0.0);
+                PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
+                PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
+                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
+                armPID.changeGains(PID_P, PID_P, PID_P);
+                armPID.changeDeadzone(PID_DEADZONE);
+            }
             if(usePID) {
                 double armAngle = getArmAngle();
                 double PID_output = armPID.updateAndGetOutput(armAngle);
@@ -102,6 +127,32 @@ public class RobotArm extends Team2791Subsystem {
             }
         }
     }
+    
+    public void disable(){
+        armMotor.set(0.0);
+        
+        calibrateWinchEncoder();
+        
+        MIN_ANGLE = Robot2014.getDoubleAutoPut("Arm-Min_Angle",3.0);
+        MAX_ANGLE = Robot2014.getDoubleAutoPut("Arm-Max_Angle",110.0);
+        ANGLE_OFFSET = Robot2014.getDoubleAutoPut("Arm-Agnle_Offset",107.0);
+        
+        PID_P = Robot2014.prefs.getDouble("Arm-PID_P",0.0);
+        PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
+        PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
+        PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
+        PID_DEADTIME = Robot2014.getDoubleAutoPut("Arm-PID_DEADTIME",0.0);
+        
+//        armPID = new BasicPID(PID_P, PID_I, PID_D);
+        armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE, PID_DEADTIME);
+        armPID.setMaxOutput(1.0);
+        armPID.setMinOutput(-1.0);
+        armPID.reset();
+        usePID = false;
+        
+        angleSensorBrokenSoft = false;
+    }
+        
     /**
      * This sets the arm motor output without any adjustment
      * @param output 
@@ -191,29 +242,6 @@ public class RobotArm extends Team2791Subsystem {
         angleSensorBrokenSoft = broken;
     }
     
-    public void disable(){
-        armMotor.set(0.0);
-        
-        MIN_ANGLE = Robot2014.getDoubleAutoPut("Arm-Min_Angle",3.0);
-        MAX_ANGLE = Robot2014.getDoubleAutoPut("Arm-Max_Angle",110.0);
-        ANGLE_OFFSET = Robot2014.getDoubleAutoPut("Arm-Agnle_Offset",107.0);
-        
-        PID_P = Robot2014.prefs.getDouble("Arm-PID_P",0.0);
-        PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
-        PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
-        PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
-        PID_DEADTIME = Robot2014.getDoubleAutoPut("Arm-PID_DEADTIME",0.0);
-        
-//        armPID = new BasicPID(PID_P, PID_I, PID_D);
-        armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE, PID_DEADTIME);
-        armPID.setMaxOutput(1.0);
-        armPID.setMinOutput(-1.0);
-        armPID.reset();
-        usePID = false;
-        
-        angleSensorBrokenSoft = false;
-    }
-    
    private boolean armHitLowerLimit() { return getArmAngle()< MIN_ANGLE; }
    private boolean armHitUpperLimit() { return getArmAngle()> MAX_ANGLE; }
    
@@ -229,46 +257,25 @@ public class RobotArm extends Team2791Subsystem {
         //0v is not rotated at all, 5v is fully rotated
         //include an offset for weird mounting, also assume no wraparound
        //angle is a bit off 0 is right but 90 is 83
-        double angle = ((5.0-absEncoder.getAverageVoltage()) * 360.0 / 5.0 - ANGLE_OFFSET );
+        double angle = ((5.0-armPot.getAverageVoltage()) * 360.0 / 5.0 - ANGLE_OFFSET );
         SmartDashboard.putNumber("Arm angle unfiltered", angle);
         if(angle > 150.0)
             setArmSensorBroken(true);
         return angle;
-//        if(angle > 150.0) { //did have 250.0 but still got random high angle
-//            SmartDashboard.putBoolean("Sensor Messed up",true);
-//            sensorMessedUpCount++;
-//            SmartDashboard.putNumber("Sensor Messed up count",sensorMessedUpCount);
-//            return lastAngle;
-//        } else {
-//            SmartDashboard.putBoolean("Sensor Messed up",false);
-//            lastAngle = angle;
-//            return angle;
-//        }
     }
     
+   public double getWinchAngle() { return winchEncoder.getDistance(); }
+   
+   private double getWinchArmDifference() { return getWinchAngle() - getArmAngle(); }
+   
     /**
      * This is where the magic happens, this code reads in the current arm location
      * and returns a feed forward required to keep it there
      * @return the motor output feed forward value
      */
     private double getFeedForward(double angle) {
-        //as the angle gets larger the force of the motor required to keep it up
-        //decreasses, so we use a cosign function
-//        return Robot2014.dash.getNumber("RobotArm-FF_Const",0.0) * Math.cos(angle/180 * Math.PI);
-        if(angle < 5) {
-            return 0.1*Math.cos(angle/180*Math.PI);
-        } else {//37 is gas shock 90
-//            return 0.148*Math.cos(angle/180*Math.PI) + 0.05*Math.sin((angle+53)/180*Math.PI); // 0.09
-            //angle offset used to be 36
-            if(angle<35) {
-                return 0.148*Math.cos(angle/180*Math.PI + 0.05);
-            } else {
-                return 0.148*Math.cos(angle/180*Math.PI + 0.05) + 0.03*Math.cos((angle-43)/180*Math.PI); // 0.148 orig, 0.165 pbot
-            }
-        }
-            //0.148
-        //in a different system this could be anythign from a switch statment used to
-        //get the feed foward based on preset to a crazy polynomial or even a constant
+        // arm weight sould stay the same but gas shock will change
+        return 0.148*Math.cos(angle/180*Math.PI + 0.05) + 0.03*Math.cos((angle-43)/180*Math.PI); // 0.148 orig, 0.165 pbot
     }
     
     public String getDebugString() {
@@ -278,19 +285,13 @@ public class RobotArm extends Team2791Subsystem {
     
     //some code that will probably never be used
     public void setUsePID(boolean setUsePID) { usePID = setUsePID; }
-    public boolean getUsePID() { return usePID; }
-    
-    
-    public boolean nearSetpoint(){
-        return (Math.abs(armPID.getError()) < 1.5);
-    }
-    
-    public boolean nearSetpointMoving(){
-        return (Math.abs(armPID.getError()) < 5.0);
-    }
+    public boolean getUsePID() { return usePID; }  
+    public boolean nearSetpoint(){ return (Math.abs(armPID.getError()) < 1.5); }
+    public boolean nearSetpointMoving(){ return (Math.abs(armPID.getError()) < 5.0); }
     
     public void display(){
         SmartDashboard.putNumber("Arm Angle",(int)getArmAngle());
+        SmartDashboard.putNumber("Winch Angle",getWinchAngle());
         SmartDashboard.putNumber("Sensor Messed up count",sensorMessedUpCount);
         sensorMessedUpCount = 0;
         SmartDashboard.putNumber("PID Output",armPID.getOutput());
