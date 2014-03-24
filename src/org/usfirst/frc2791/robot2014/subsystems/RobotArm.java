@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import org.usfirst.frc2791.robot2014.BasicPID;
 import org.usfirst.frc2791.robot2014.FloppityPID;
 import edu.wpi.first.wpilibj.templates.Robot2014;
 
@@ -41,7 +40,6 @@ public class RobotArm extends Team2791Subsystem {
     //these are the shooter PID constants
     //this is the tollerence that the wheel speed has to be within to be considered "good"
     private double PID_P = 0.075, PID_I = 0.01, PID_D = 0.007, PID_DEADZONE = 3; //plus or minus
-    private double PID_DEADTIME = 0.0;
 //    PID_P = 0.15, PID_I = 0.0ejeen  5, PID_D = 0.005;
     
     //this var helps the manual control code play nice with the PID code
@@ -52,9 +50,7 @@ public class RobotArm extends Team2791Subsystem {
     //65.5 old angle, 75.0 crazy pratice field angle
     private static final double[] PRESET_VALUES = {22.5, 67.0, 90.0, 7.0};
     public boolean nearShooter = false;
-    //debug stuff
-    private double lastAngle = 0;
-    private int sensorMessedUpCount = 0;
+    // arm sensor broken
     private final boolean angleSensorBrokenHard = true;
     private boolean angleSensorBrokenSoft = false;
     
@@ -74,12 +70,9 @@ public class RobotArm extends Team2791Subsystem {
         PID_I = Robot2014.getDoubleAutoPut("Arm-PID_I",0.0);
         PID_D = Robot2014.getDoubleAutoPut("Arm-PID_D",0.0);
         PID_DEADZONE = Robot2014.getDoubleAutoPut("Arm-PID_DEADZONE",0.0);
-        PID_DEADTIME = Robot2014.getDoubleAutoPut("Arm-PID_DEADTIME",0.0);
-        
         
         //init the PID
-//        armPID = new BasicPID(PID_P, PID_I, PID_D);
-        armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE, PID_DEADTIME);
+        armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE);
         armPID.setMaxOutput(1.0);
         armPID.setMinOutput(-1.0);
         
@@ -141,12 +134,9 @@ public class RobotArm extends Team2791Subsystem {
         PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
         PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
         PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
-        PID_DEADTIME = Robot2014.getDoubleAutoPut("Arm-PID_DEADTIME",0.0);
         
-//        armPID = new BasicPID(PID_P, PID_I, PID_D);
-        armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE, PID_DEADTIME);
-        armPID.setMaxOutput(1.0);
-        armPID.setMinOutput(-1.0);
+        armPID.changeGains(PID_P, PID_I, PID_D);
+        armPID.changeDeadzone(PID_DEADZONE);
         armPID.reset();
         usePID = false;
         
@@ -284,8 +274,6 @@ public class RobotArm extends Team2791Subsystem {
     public void display(){
         SmartDashboard.putNumber("Arm Angle",(int)getArmAngle());
         SmartDashboard.putNumber("Winch Angle",getWinchAngle());
-        SmartDashboard.putNumber("Sensor Messed up count",sensorMessedUpCount);
-        sensorMessedUpCount = 0;
         SmartDashboard.putNumber("PID Output",armPID.getOutput());
         SmartDashboard.putBoolean("Arm near setpoint",nearSetpoint());
         SmartDashboard.putBoolean("Arm near setpoint moving",nearSetpointMoving());
