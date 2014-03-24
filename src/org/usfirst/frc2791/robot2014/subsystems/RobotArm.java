@@ -274,8 +274,8 @@ public class RobotArm extends Team2791Subsystem {
      * @return the motor output feed forward value
      */
     private double getFeedForward(double angle) {
-        // arm weight sould stay the same but gas shock will change
-        return 0.148*Math.cos(angle/180*Math.PI + 0.05) + 0.03*Math.cos((angle-43)/180*Math.PI); // 0.148 orig, 0.165 pbot
+        // arm weight + gas shock
+        return -0.148*Math.cos(angle/180*Math.PI + 0.05) + 0.00*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
     }
     
     public String getDebugString() {
