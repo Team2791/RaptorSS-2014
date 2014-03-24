@@ -159,7 +159,6 @@ public class RobotArm extends Team2791Subsystem {
      */
     public void setMotorOutputManual(double output) {
         usePID = false;
-//        System.out.println("arm set motor output manual called: "+output);
         setMotorOutput(output);
     }
     
@@ -170,14 +169,7 @@ public class RobotArm extends Team2791Subsystem {
      */
     public void setMotorOutputManualAdjusted(double output) {
         usePID = false;
-        if(angleSensorBrokenHard || angleSensorBrokenSoft) {
-            setMotorOutput(output);
-            return;
-        }
-        
-        double armAngle = getArmAngle();
-        setMotorOutput(output - getFeedForward(armAngle));
-//        System.out.println("arm set motor output manual adj called: "+(output - getFeedForward(armAngle)));
+        setMotorOutputAdjusted(output);
     }
     
     public void setMotorOutputAdjusted(double output) {
@@ -198,10 +190,10 @@ public class RobotArm extends Team2791Subsystem {
 //        if(Robot2014.getBoolAutoPut("Arm-Sensor broken",false)) {
         
         //saturate output
-        if(output > 1.0) //this should be up
-            output = 1.0;
-        else if(output < -0.3) //this should be down
-            output = -0.3;
+        if(output > 0.3) // limit up speed
+            output = 0.3;
+        else if(output < -1.0) // limit down speed
+            output = -1.0;
         
         //if we can read the angle sensor use it
         if(!(angleSensorBrokenHard || angleSensorBrokenSoft)) {
