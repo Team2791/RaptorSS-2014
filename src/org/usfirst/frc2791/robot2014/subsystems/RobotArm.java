@@ -51,25 +51,25 @@ public class RobotArm extends Team2791Subsystem {
     private static final double[] PRESET_VALUES = {22.5, 67.0, 90.0, 7.0};
     public boolean nearShooter = false;
     // arm sensor broken
-    private final boolean angleSensorBrokenHard = true;
+    private final boolean angleSensorBrokenHard = false;
     private boolean angleSensorBrokenSoft = false;
     
     
     public RobotArm() {
      //init the motors
         armMotor = new Victor(1, 3); //motor 3
-        
+        armPot = new AnalogChannel(1);
         winchEncoder =  new Encoder(10, 11, false, CounterBase.EncodingType.k4X);
         //pulses per rotation, gear reduction downstream of the encoder, degrees per rotation placeholder)
-        winchEncoder.setDistancePerPulse(128 * 64/20 * 100.0);
+        winchEncoder.setDistancePerPulse(1/64 * 64/20 * 1.0);
         calibrateWinchEncoder();
         
-        armPot = new AnalogChannel(1);
         
         PID_P = Robot2014.getDoubleAutoPut("Arm-PID_P",0.0);
         PID_I = Robot2014.getDoubleAutoPut("Arm-PID_I",0.0);
         PID_D = Robot2014.getDoubleAutoPut("Arm-PID_D",0.0);
         PID_DEADZONE = Robot2014.getDoubleAutoPut("Arm-PID_DEADZONE",0.0);
+        Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
         
         //init the PID
         armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE);
@@ -90,7 +90,8 @@ public class RobotArm extends Team2791Subsystem {
         } else {
             // if there is a large difference between the arm angle and winch angle
             // that means there's slack in the rope, change PID gains
-            if(getWinchArmDifference() > 3.0) {
+            if(false) {
+//            if(getWinchArmDifference() > 3.0) {
                 PID_P = Robot2014.prefs.getDouble("Arm-PID_P_WITH_SLACK",0.0);
                 PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
                 armPID.changeGains(PID_P, 0.0, 0.0);
@@ -180,8 +181,8 @@ public class RobotArm extends Team2791Subsystem {
 //        if(Robot2014.getBoolAutoPut("Arm-Sensor broken",false)) {
         
         //saturate output
-        if(output > 0.3) // limit up speed
-            output = 0.3;
+        if(output > 1.0) // limit up speed
+            output = 1.0;
         else if(output < -1.0) // limit down speed
             output = -1.0;
         
@@ -257,7 +258,7 @@ public class RobotArm extends Team2791Subsystem {
      */
     private double getFeedForward(double angle) {
         // arm weight + gas shock
-        return -0.148*Math.cos(angle/180*Math.PI + 0.05) + 0.00*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
+        return 0.148*Math.cos(angle/180*Math.PI + 0.05) - 0.22*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
     }
     
     public String getDebugString() {
