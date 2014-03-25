@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import org.usfirst.frc2791.robot2014.BasicPID;
 import org.usfirst.frc2791.robot2014.FloppityPID;
 import edu.wpi.first.wpilibj.templates.Robot2014;
 
@@ -41,7 +40,6 @@ public class RobotArm extends Team2791Subsystem {
     //these are the shooter PID constants
     //this is the tollerence that the wheel speed has to be within to be considered "good"
     private double PID_P = 0.075, PID_I = 0.01, PID_D = 0.007, PID_DEADZONE = 3; //plus or minus
-    private double PID_DEADTIME = 0.0;
 //    PID_P = 0.15, PID_I = 0.0ejeen  5, PID_D = 0.005;
     
     //this var helps the manual control code play nice with the PID code
@@ -52,34 +50,29 @@ public class RobotArm extends Team2791Subsystem {
     //65.5 old angle, 75.0 crazy pratice field angle
     private static final double[] PRESET_VALUES = {22.5, 67.0, 90.0, 7.0};
     public boolean nearShooter = false;
-    //debug stuff
-    private double lastAngle = 0;
-    private int sensorMessedUpCount = 0;
-    private final boolean angleSensorBrokenHard = true;
+    // arm sensor broken
+    private final boolean angleSensorBrokenHard = false;
     private boolean angleSensorBrokenSoft = false;
     
     
     public RobotArm() {
      //init the motors
         armMotor = new Victor(1, 3); //motor 3
-        
+        armPot = new AnalogChannel(1);
         winchEncoder =  new Encoder(10, 11, false, CounterBase.EncodingType.k4X);
         //pulses per rotation, gear reduction downstream of the encoder, degrees per rotation placeholder)
-        winchEncoder.setDistancePerPulse(128 * 64/20 * 100.0);
+        winchEncoder.setDistancePerPulse(1/64 * 64/20 * 1.0);
         calibrateWinchEncoder();
         
-        armPot = new AnalogChannel(1);
         
         PID_P = Robot2014.getDoubleAutoPut("Arm-PID_P",0.0);
         PID_I = Robot2014.getDoubleAutoPut("Arm-PID_I",0.0);
         PID_D = Robot2014.getDoubleAutoPut("Arm-PID_D",0.0);
         PID_DEADZONE = Robot2014.getDoubleAutoPut("Arm-PID_DEADZONE",0.0);
-        PID_DEADTIME = Robot2014.getDoubleAutoPut("Arm-PID_DEADTIME",0.0);
-        
+        Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
         
         //init the PID
-//        armPID = new BasicPID(PID_P, PID_I, PID_D);
-        armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE, PID_DEADTIME);
+        armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE);
         armPID.setMaxOutput(1.0);
         armPID.setMinOutput(-1.0);
         
@@ -97,7 +90,8 @@ public class RobotArm extends Team2791Subsystem {
         } else {
             // if there is a large difference between the arm angle and winch angle
             // that means there's slack in the rope, change PID gains
-            if(getWinchArmDifference() > 3.0) {
+            if(false) {
+//            if(getWinchArmDifference() > 3.0) {
                 PID_P = Robot2014.prefs.getDouble("Arm-PID_P_WITH_SLACK",0.0);
                 PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
                 armPID.changeGains(PID_P, 0.0, 0.0);
@@ -141,12 +135,9 @@ public class RobotArm extends Team2791Subsystem {
         PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
         PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
         PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
-        PID_DEADTIME = Robot2014.getDoubleAutoPut("Arm-PID_DEADTIME",0.0);
         
-//        armPID = new BasicPID(PID_P, PID_I, PID_D);
-        armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE, PID_DEADTIME);
-        armPID.setMaxOutput(1.0);
-        armPID.setMinOutput(-1.0);
+        armPID.changeGains(PID_P, PID_I, PID_D);
+        armPID.changeDeadzone(PID_DEADZONE);
         armPID.reset();
         usePID = false;
         
@@ -159,7 +150,6 @@ public class RobotArm extends Team2791Subsystem {
      */
     public void setMotorOutputManual(double output) {
         usePID = false;
-//        System.out.println("arm set motor output manual called: "+output);
         setMotorOutput(output);
     }
     
@@ -170,14 +160,7 @@ public class RobotArm extends Team2791Subsystem {
      */
     public void setMotorOutputManualAdjusted(double output) {
         usePID = false;
-        if(angleSensorBrokenHard || angleSensorBrokenSoft) {
-            setMotorOutput(output);
-            return;
-        }
-        
-        double armAngle = getArmAngle();
-        setMotorOutput(output - getFeedForward(armAngle));
-//        System.out.println("arm set motor output manual adj called: "+(output - getFeedForward(armAngle)));
+        setMotorOutputAdjusted(output);
     }
     
     public void setMotorOutputAdjusted(double output) {
@@ -198,10 +181,10 @@ public class RobotArm extends Team2791Subsystem {
 //        if(Robot2014.getBoolAutoPut("Arm-Sensor broken",false)) {
         
         //saturate output
-        if(output > 1.0) //this should be up
+        if(output > 1.0) // limit up speed
             output = 1.0;
-        else if(output < -0.3) //this should be down
-            output = -0.3;
+        else if(output < -1.0) // limit down speed
+            output = -1.0;
         
         //if we can read the angle sensor use it
         if(!(angleSensorBrokenHard || angleSensorBrokenSoft)) {
@@ -275,7 +258,7 @@ public class RobotArm extends Team2791Subsystem {
      */
     private double getFeedForward(double angle) {
         // arm weight + gas shock
-        return -0.148*Math.cos(angle/180*Math.PI + 0.05) + 0.00*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
+        return 0.148*Math.cos(angle/180*Math.PI + 0.05) - 0.22*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
     }
     
     public String getDebugString() {
@@ -292,8 +275,6 @@ public class RobotArm extends Team2791Subsystem {
     public void display(){
         SmartDashboard.putNumber("Arm Angle",(int)getArmAngle());
         SmartDashboard.putNumber("Winch Angle",getWinchAngle());
-        SmartDashboard.putNumber("Sensor Messed up count",sensorMessedUpCount);
-        sensorMessedUpCount = 0;
         SmartDashboard.putNumber("PID Output",armPID.getOutput());
         SmartDashboard.putBoolean("Arm near setpoint",nearSetpoint());
         SmartDashboard.putBoolean("Arm near setpoint moving",nearSetpointMoving());
