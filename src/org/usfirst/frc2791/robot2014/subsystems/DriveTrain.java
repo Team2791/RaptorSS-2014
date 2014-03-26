@@ -21,12 +21,14 @@ public class DriveTrain extends Team2791Subsystem {
     private static SpeedController driveTrainLeftMotorController;
     private static SpeedController driveTrainRightMotorController;
     //these should be made private and getter methods added
-    public static Encoder driveTrainEncoderLeft;
-    public static Encoder driveTrainEncoderRight;
+    private static Encoder driveTrainEncoderLeft;
+    private static Encoder driveTrainEncoderRight;
     private static Gyro gyro;
-    private static DriveType driveType, slow = new DriveType("Slow"), linear = new DriveType("Linear");
+    private static boolean gyroCal = false;
+    private DriveType driveType, slow = new DriveType("Slow"), linear = new DriveType("Linear");
     //constants
     private static final boolean RIGHT_SIDE_REVERSED = false;
+    
     
     public DriveTrain() {
          System.out.println("Running Drivetrain init");
@@ -105,6 +107,7 @@ public class DriveTrain extends Team2791Subsystem {
         SmartDashboard.putNumber("DT Encoder Right Speed", driveTrainEncoderRight.getRate());
         SmartDashboard.putNumber("DT Encoder Avg Speed", getSpeed());
         SmartDashboard.putNumber("Gyro Angle", gyro.getAngle());
+        SmartDashboard.putBoolean("Gyro Calibrated!!", gyroCal);
         
     }
     
@@ -143,9 +146,11 @@ public class DriveTrain extends Team2791Subsystem {
         gyro.reset();
     }
     
+    //takes six seconds
     public void freeRangeGyro() {
         gyro.free();
         gyro = new Gyro(2);
+        gyroCal = true;
     }
     
     public void setDriveType(DriveType type){

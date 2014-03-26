@@ -25,7 +25,7 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Preferences;
-import edu.wpi.first.wpilibj.image.ColorImage;
+//import edu.wpi.first.wpilibj.image.ColorImage;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.usfirst.frc2791.robot2014.AutonRunner;
 import org.usfirst.frc2791.robot2014.TeleopRunner;
@@ -146,6 +146,12 @@ public class Robot2014 extends IterativeRobot {
         compressor.stop();
         
         teleopRunner.setSafety(true);
+        //when driver holds LB and RB recal the gyro, this is gonna cause some lag but that's okay for now
+        if(Robot2014.driverLeftStick.getRawButton(5) && Robot2014.driverLeftStick.getRawButton(6)) {
+            SmartDashboard.putBoolean("gyro calibrating", true);
+            driveTrain.freeRangeGyro();
+            SmartDashboard.putBoolean("gyro calibrating", false);
+        }
     }
     
     //    public void testInit() {}
@@ -182,8 +188,8 @@ public class Robot2014 extends IterativeRobot {
         //ds_lcd.println(DriverStationLCD.Line.kUser2,1,"RightJoy: "+driverRightStick.getY()+SPACE);
         
         
-        ds_lcd.println(DriverStationLCD.Line.kUser1,1,"right enc: "+Math.abs(DriveTrain.driveTrainEncoderRight.getDistance())+SPACE);
-        ds_lcd.println(DriverStationLCD.Line.kUser2,1,"left enc: "+Math.abs(DriveTrain.driveTrainEncoderLeft.getDistance())+SPACE);
+//        ds_lcd.println(DriverStationLCD.Line.kUser1,1,"right enc: "+Math.abs(DriveTrain.driveTrainEncoderRight.getDistance())+SPACE);
+//        ds_lcd.println(DriverStationLCD.Line.kUser2,1,"left enc: "+Math.abs(DriveTrain.driveTrainEncoderLeft.getDistance())+SPACE);
 //        ds_lcd.println(DriverStationLCD.Line.kUser4,1,"OP Stick: "+operatorStick.getY()+SPACE);
         
         ds_lcd.println(DriverStationLCD.Line.kUser3,1,robotArm.getDebugString()+SPACE);
