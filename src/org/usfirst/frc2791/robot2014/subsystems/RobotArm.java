@@ -6,6 +6,7 @@ package org.usfirst.frc2791.robot2014.subsystems;
 
 import edu.wpi.first.wpilibj.AnalogChannel;
 import edu.wpi.first.wpilibj.CounterBase;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Victor;
@@ -27,6 +28,8 @@ public class RobotArm extends Team2791Subsystem {
     //FOR NOW ASSUME ENCODER THIS LIKELY WILL CHANGE TO AN ANALOG ABSOLUTE SENSOR!!!!
     public static AnalogChannel armPot;
     public static Encoder winchEncoder;
+    private static DigitalInput topSensor;
+    private static DigitalInput botSensor;
     private double winchEncoderOffset = 0.0;
     //reading = sensorRaw - offset
     static double MIN_ANGLE = Robot2014.getDoubleAutoPut("Arm-Min_Angle",3.0);
@@ -59,7 +62,9 @@ public class RobotArm extends Team2791Subsystem {
      //init the motors
         armMotor = new Victor(1, 3); //motor 3
         armPot = new AnalogChannel(1);
-        winchEncoder =  new Encoder(10, 11, false, CounterBase.EncodingType.k4X);
+        topSensor = new DigitalInput(10);
+        botSensor = new DigitalInput(12);
+        winchEncoder =  new Encoder(13, 14, false, CounterBase.EncodingType.k4X);
         //pulses per rotation, gear reduction downstream of the encoder, degrees per rotation placeholder)
         winchEncoder.setDistancePerPulse(1/64 * 64/20 * 1.0);
         calibrateWinchEncoder();
@@ -284,5 +289,7 @@ public class RobotArm extends Team2791Subsystem {
         SmartDashboard.putBoolean("Arm near setpoint",nearSetpoint());
         SmartDashboard.putBoolean("Arm near setpoint moving",nearSetpointMoving());
         SmartDashboard.putBoolean("Arm sensor broken", angleSensorBrokenHard || angleSensorBrokenSoft);
+        SmartDashboard.putBoolean("Arm top stop", !topSensor.get());
+        SmartDashboard.putBoolean("Arm bot stop", !botSensor.get());
     }
 }

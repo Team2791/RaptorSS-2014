@@ -39,10 +39,6 @@ import org.usfirst.frc2791.robot2014.TeleopRunner;
  * directory.
  */
 public class Robot2014 extends IterativeRobot {
-    
-    
-    
-    
     // encoders
     public static Encoder rightDriveEncoder;
     public static Encoder leftDriveEncoder;
