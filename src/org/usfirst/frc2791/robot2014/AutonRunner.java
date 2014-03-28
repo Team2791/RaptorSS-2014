@@ -74,7 +74,7 @@ public class AutonRunner {
         // various autons
 //        oneBallShlub();
 //        oneBallOnePoint();
-            oneToTwoBall();
+        oneballMoveShoot();
 //        oneBallMoving();
         
 //        driveElims();
@@ -164,7 +164,7 @@ public class AutonRunner {
         return false;
     }
     
-    private boolean oneToTwoBall() {
+    private boolean oneballMoveShoot() {
         switch(autonState){
             //lower the robot arm until it hits the limit switch and zeros out
             case 1: //init loop
@@ -185,79 +185,37 @@ public class AutonRunner {
             case 3: //drive to shooting location
                 Robot2014.shooterPunch.setEnabled(true);
                 Robot2014.intakeClaw.setClawOpen(false);
-                Robot2014.intakeClaw.setIntakeRollerOutput(0.7);
+//                Robot2014.intakeClaw.setIntakeRollerOutput(0.7);
                 Robot2014.robotArm.goToPreset(1);
                 //crazy pratice field addation +3+9+5+12
-                if(driveToDistance(10.0*12)) {
+                if(driveToDistance(12.75*12)) {
                     timer.reset();
                     autonState++;
                 }
                 break;
+            case 4: //wait a bit
+                if(timer.get() > 1.5)
+                    autonState++;
+                break;
                 
-            case 4: //wait for the arm to be good then kill the PID and fire
+            case 5: //wait for the arm to be good then kill the PID and fire
                 Robot2014.driveTrain.setLeftRightSpeed(0.0, 0.0);
                 //kill pid
                 if(Robot2014.robotArm.nearSetpoint()) {
-                    Robot2014.robotArm.setMotorOutputManualAdjusted(0.0);
+//                    Robot2014.robotArm.setMotorOutputManualAdjusted(0.0);
                     Robot2014.intakeClaw.setClawOpen(true);
                     Robot2014.shooterPunch.fire();
                     timer.reset();
                     autonState++;
                 }
                     break;
-                
-              
-            case 5: //wait for shot to finish, then get ready to catch
+            case 6: //wait for shot to finish, then get ready to catch
                 if(timer.get() > .5) {
                     Robot2014.intakeClaw.setClawOpen(false);
                     Robot2014.driveTrain.setLeftRightSpeed(0, 0);
                     Robot2014.intakeClaw.setIntakeRollerOutput(0.7);
                 }
                 break;
-//            
-//            case 7: //back up, lower arm, close claw
-//                if(!twoBall) {
-//                    autonState = 0;
-//                    break;
-//                }
-//                Robot2014.intakeClaw.setClawOpen(false);
-//                Robot2014.robotArm.goToPreset(3);
-//                if(driveToDistance((14-1.5)*12))
-//                    autonState++;
-//                break;
-//            case 8:
-//                if(timer.get() > .5)
-//                    autonState++;
-//                break;
-//            
-//            case 9: //pickup ball
-//                Robot2014.intakeClaw.setIntakeRollerOutput(0.8);
-//                if(driveToDistance(14*12))
-//                    autonState++;
-//                break;
-//            case 10:
-//                if(timer.get() > .5)
-//                    autonState++;
-//                break;
-//            case 11: //raise arm and shoot
-//                Robot2014.driveTrain.setLeftRightSpeed(0.0, 0.0);
-//                Robot2014.robotArm.goToPreset(1);
-//                if(!Robot2014.intakeClaw.getClawOpen() && Robot2014.robotArm.nearSetpoint()) {
-//                    Robot2014.shooterPunch.fire();
-//                    timer.reset();
-//                    autonState++;
-//                } else {
-//                    Robot2014.intakeClaw.setClawOpen(true);
-//                }
-//                break;
-//            case 12:
-//                if(timer.get() > .5)
-//                    autonState++;
-//                break;
-//            case 13:
-//                Robot2014.intakeClaw.setClawOpen(false);
-//                autonState = 0;
-//                break;
             case 0: default: //do nothing
                 Robot2014.driveTrain.setLeftRightSpeed(0.0, 0.0);
                 return true;
@@ -278,18 +236,17 @@ public class AutonRunner {
                 break;
                 
             case 2: //wait for sensors to reset, not sure how much time they need, 0.2 seems to be working
-                if(timer.get() > 0.2)
+                Robot2014.robotArm.goToPreset(1);
+                if(timer.get() > 4.0)
                     autonState++;
                 break;
                 
             case 3: //drive to shooting location
                 Robot2014.shooterPunch.setEnabled(true);
                 Robot2014.intakeClaw.setClawOpen(false);
+                
                 if(driveToDistance(16.0*12)) {
-                    if(Robot2014.driveTrain.getDistance()> 1.5*12)
-                        Robot2014.robotArm.goToPreset(1);
-                    if(Robot2014.driveTrain.getDistance()> 10*12 && 
-                            Robot2014.robotArm.nearSetpointMoving()) {
+                    if(Robot2014.driveTrain.getDistance()> 10*12) {
                         Robot2014.robotArm.setMotorOutputManualAdjusted(0.0);
                         Robot2014.intakeClaw.setClawOpen(true);
                         Robot2014.shooterPunch.fire();
