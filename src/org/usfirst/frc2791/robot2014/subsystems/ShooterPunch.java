@@ -30,7 +30,7 @@ public class ShooterPunch extends Team2791Subsystem {
     //state vars
     private static boolean fire = false;
     private static boolean enabled = false;
-    public Timer shotTimer;
+    public Timer sensorTimeoutTimer;
     //0 top, 1 mid, 2 bot
     private static short lastSensorHit;
     //the amount of time in seconds to wait before starting to pull back the 
@@ -44,8 +44,8 @@ public class ShooterPunch extends Team2791Subsystem {
         releaseSolenoid = new DoubleSolenoid(3,4);
         setReleaseSolonoid(false);
         
-        shotTimer = new Timer();
-        shotTimer.start();
+        sensorTimeoutTimer = new Timer();
+        sensorTimeoutTimer.start();
         
         topSensor = new DigitalInput(8);
         midSensor = new DigitalInput(7);
@@ -75,7 +75,7 @@ public class ShooterPunch extends Team2791Subsystem {
        //first thing first, if the shooter is not loaded load it
        if(fire) { //if time to fire, well FIRE
            setReleaseSolonoid(true);
-           shotTimer.reset();
+           sensorTimeoutTimer.reset();
            fire = false;
        }
        if(enabled) {
@@ -87,21 +87,30 @@ public class ShooterPunch extends Team2791Subsystem {
                     setReleaseSolonoid(false);
 //                    windingMotor.set(-0.8);
                     if(lastSensorHit == 0) //top sensor
-                        windingMotor.set(-1.0);
+                        setMotorSpeed(1.0);
                     else if(lastSensorHit == 1) //mid sensor
-                        windingMotor.set(-0.50); //was -.80 then -.50
+                        setMotorSpeed(0.50); //was -.80 then -.50
                 } else { //waiting for punch to hit top sensor
                     pullingBack = true;
                     //wait and do nothing
-                    windingMotor.set(0);
+                    setMotorSpeed(0);
                 }
             } else { //shooter is ready to fire
                 pullingBack = false;
-                windingMotor.set(0); //turn off the winding motor
+                setMotorSpeed(0); //turn off the winding motor
             }
        } else { //disabled
-           windingMotor.set(0);
+           setMotorSpeed(0);
        }
+    }
+    
+    private void setMotorSpeed(double speed) {
+        if (speed < 0)
+            speed = 0;
+        if(sensorTimeoutTimer.get() > 3.0) 
+            windingMotor.set(0);
+        else
+            windingMotor.set(-speed);
     }
     
     private void readSensors() {
@@ -143,7 +152,7 @@ public class ShooterPunch extends Team2791Subsystem {
     public void disable() {
         fire = false;
         setEnabled(false);
-        shotTimer.reset();
+        sensorTimeoutTimer.reset();
         readSensors();
     }
     

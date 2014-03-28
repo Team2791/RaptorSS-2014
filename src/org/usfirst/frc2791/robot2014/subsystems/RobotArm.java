@@ -48,7 +48,7 @@ public class RobotArm extends Team2791Subsystem {
     //this is an array of presets
     //the presets are as follows: AUTON_SHOT, LOADING, TELEOP_BACK_SHOT
     //65.5 old angle, 75.0 crazy pratice field angle
-    private static final double[] PRESET_VALUES = {22.5, 67.0, 90.0, 7.0};
+    private static final double[] PRESET_VALUES = {22.5, 55.0, 90.0, 7.0};
     public boolean nearShooter = false;
     // arm sensor broken
     private final boolean angleSensorBrokenHard = false;
@@ -73,8 +73,8 @@ public class RobotArm extends Team2791Subsystem {
         
         //init the PID
         armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE);
-        armPID.setMaxOutput(1.0);
-        armPID.setMinOutput(-1.0);
+        armPID.setMaxOutput(0.70);
+        armPID.setMinOutput(-0.70);
         
     }
     
@@ -90,20 +90,20 @@ public class RobotArm extends Team2791Subsystem {
         } else {
             // if there is a large difference between the arm angle and winch angle
             // that means there's slack in the rope, change PID gains
-            if(false) {
+            if(getArmAngle() > 70) {
 //            if(getWinchArmDifference() > 3.0) {
-                PID_P = Robot2014.prefs.getDouble("Arm-PID_P_WITH_SLACK",0.0);
-                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
-                armPID.changeGains(PID_P, 0.0, 0.0);
-                armPID.changeDeadzone(PID_DEADZONE);
-                armPID.reset();
+//                PID_P = Robot2014.prefs.getDouble("Arm-PID_P_WITH_SLACK",0.0);
+//                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
+//                armPID.changeGains(PID_P*(((getArmAngle()-70.0)/30.0+1.0)), 0.0, 0.0);
+//                armPID.changeDeadzone(PID_DEADZONE);
+//                armPID.reset();
             } else { //normal PID gains
-                PID_P = Robot2014.prefs.getDouble("Arm-PID_P",0.0);
-                PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
-                PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
-                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
-                armPID.changeGains(PID_P, PID_P, PID_P);
-                armPID.changeDeadzone(PID_DEADZONE);
+//                PID_P = Robot2014.prefs.getDouble("Arm-PID_P",0.0);
+//                PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
+//                PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
+//                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
+//                armPID.changeGains(PID_P, PID_P, PID_P);
+//                armPID.changeDeadzone(PID_DEADZONE);
             }
             if(usePID) {
                 double armAngle = getArmAngle();
@@ -172,6 +172,11 @@ public class RobotArm extends Team2791Subsystem {
         SmartDashboard.putNumber("Arm output raw",output);
         SmartDashboard.putNumber("Arm FF output",-getFeedForward(armAngle));
         SmartDashboard.putNumber("Arm total output",output-getFeedForward(armAngle));
+//        //24.5 is angle at top
+//        double lineOfActionConstant = 1.0;
+//        if(armAngle > 70) {
+//            lineOfActionConstant = ((armAngle-70.0)/30.0 + 1.0) * 2.0;
+//        }
         setMotorOutput(output - getFeedForward(armAngle));
     }
     
@@ -257,8 +262,8 @@ public class RobotArm extends Team2791Subsystem {
      * @return the motor output feed forward value
      */
     private double getFeedForward(double angle) {
-        // arm weight + gas shock
-        return 0.148*Math.cos(angle/180*Math.PI + 0.05) - 0.22*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
+        // arm weight + gas shock (0.148 - 0.22)
+        return 0.148*Math.cos(angle/180*Math.PI + 0.05) - .236*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
     }
     
     public String getDebugString() {

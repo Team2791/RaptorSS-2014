@@ -182,7 +182,8 @@ public class Robot2014 extends IterativeRobot {
     
     public void display(){
         SmartDashboard.putNumber("Target Error",robotArm.armPID.getError());
-        
+        SmartDashboard.putNumber("Tuning throttle", Robot2014.operatorStick.getRawAxis(3));
+                
 //        compressor is automatically run and stopped
     //ds_lcd.println(DriverStationLCD.Line.kUser1,1,"LeftJoy: "+driverLeftStick.getY()+SPACE);
         //ds_lcd.println(DriverStationLCD.Line.kUser2,1,"RightJoy: "+driverRightStick.getY()+SPACE);

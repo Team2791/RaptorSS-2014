@@ -72,9 +72,9 @@ public class AutonRunner {
         //will run. case 0 is a the default do nothing case
         SmartDashboard.putNumber("Auton State", autonState);
         // various autons
-        oneBallShlub();
+//        oneBallShlub();
 //        oneBallOnePoint();
-//            oneToTwoBall();
+            oneToTwoBall();
 //        oneBallMoving();
         
 //        driveElims();
@@ -170,7 +170,7 @@ public class AutonRunner {
             case 1: //init loop
                 Robot2014.driveTrain.setLeftRightSpeed(0.0, 0.0);
                 Robot2014.driveTrain.resetSensors();
-                Robot2014.driveTrain.freeRangeGyro();
+//                Robot2014.driveTrain.freeRangeGyro();
                 driveDistancePID.setMaxOutput(0.60);
                 driveDistancePID.setMinOutput(-0.60);
                 timer.reset();
@@ -188,7 +188,7 @@ public class AutonRunner {
                 Robot2014.intakeClaw.setIntakeRollerOutput(0.7);
                 Robot2014.robotArm.goToPreset(1);
                 //crazy pratice field addation +3+9+5+12
-                if(driveToDistance(12.833333*12-2)) {
+                if(driveToDistance(10.0*12)) {
                     timer.reset();
                     autonState++;
                 }
