@@ -112,6 +112,7 @@ public class TeleopRunner {
         if(Robot2014.operatorStick.getRawButton(4)) Robot2014.robotArm.goToPreset(0);
         else if(Robot2014.operatorStick.getRawButton(3)) Robot2014.robotArm.goToPreset(1);
         else if(Robot2014.operatorStick.getRawButton(5)) Robot2014.robotArm.goToPreset(2);
+        else if(Robot2014.operatorStick.getRawButton(8)) Robot2014.robotArm.goToPreset(3);
 //        else if(Robot2014.operatorStick.getTrigger()) PREP_SHOT = true;
 //        //ect
 //        //etc
@@ -183,7 +184,7 @@ public class TeleopRunner {
     }
     
     private void robotArmSensorDisable() {
-        boolean overrideArmAngleSensor = Robot2014.operatorStick.getRawButton(8) && Robot2014.operatorStick.getRawButton(9);
+        boolean overrideArmAngleSensor = Robot2014.operatorStick.getRawButton(9);
         if(overrideArmAngleSensor) {
             if(overrideArmAngleSensorTimer.get() > 1.0)
                 Robot2014.robotArm.setArmSensorBroken(true);

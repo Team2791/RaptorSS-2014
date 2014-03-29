@@ -51,7 +51,7 @@ public class RobotArm extends Team2791Subsystem {
     //this is an array of presets
     //the presets are as follows: AUTON_SHOT, LOADING, TELEOP_BACK_SHOT
     //65.5 old angle, 75.0 crazy pratice field angle
-    private static final double[] PRESET_VALUES = {22.5, 57.5, 90.0, 7.0};
+    private static final double[] PRESET_VALUES = {22.5, 57.5, 90.0, 2.5};
     public boolean nearShooter = false;
     // arm sensor broken
     private final boolean angleSensorBrokenHard = false;
@@ -78,8 +78,8 @@ public class RobotArm extends Team2791Subsystem {
         
         //init the PID
         armPID = new FloppityPID(PID_P, PID_I, PID_D, PID_DEADZONE);
-        armPID.setMaxOutput(0.70);
-        armPID.setMinOutput(-0.70);
+        armPID.setMaxOutput(1.0);
+        armPID.setMinOutput(-1.0);
         
     }
     
@@ -177,11 +177,10 @@ public class RobotArm extends Team2791Subsystem {
         SmartDashboard.putNumber("Arm output raw",output);
         SmartDashboard.putNumber("Arm FF output",-getFeedForward(armAngle));
         SmartDashboard.putNumber("Arm total output",output-getFeedForward(armAngle));
-//        //24.5 is angle at top
-//        double lineOfActionConstant = 1.0;
-//        if(armAngle > 70) {
-//            lineOfActionConstant = ((armAngle-70.0)/30.0 + 1.0) * 2.0;
-//        }
+        if(armAngle > 88.5) { //if the arm is up don't allow slacks
+            if(output < 0.0) //this is up, gets inverted later on, code could be better
+                output = 0.0;
+        }
         setMotorOutput(output - getFeedForward(armAngle));
     }
     
