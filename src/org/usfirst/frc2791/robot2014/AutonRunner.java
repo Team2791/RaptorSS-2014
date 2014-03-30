@@ -186,23 +186,26 @@ public class AutonRunner {
                 Robot2014.shooterPunch.setEnabled(true);
                 Robot2014.intakeClaw.setClawOpen(false);
 //                Robot2014.intakeClaw.setIntakeRollerOutput(0.7);
-                Robot2014.robotArm.goToPreset(1);
+//                Robot2014.robotArm.goToPreset(1);
                 //crazy pratice field addation +3+9+5+12
                 if(driveToDistance(12.75*12)) {
                     timer.reset();
                     autonState++;
                 }
                 break;
+                
             case 4: //wait a bit
-                if(timer.get() > 1.5)
+                if(timer.get() > 0.5)
                     autonState++;
                 break;
                 
             case 5: //wait for the arm to be good then kill the PID and fire
                 Robot2014.driveTrain.setLeftRightSpeed(0.0, 0.0);
-                //kill pid
-                if(Robot2014.robotArm.nearSetpoint()) {
-//                    Robot2014.robotArm.setMotorOutputManualAdjusted(0.0);
+//                driveToDistance(12.75*12); // will put in if get moved in auton
+                Robot2014.robotArm.goToPreset(1);
+                if(!Robot2014.robotArm.nearSetpoint())
+                    timer.reset();
+                if(timer.get() > 0.75) {
                     Robot2014.intakeClaw.setClawOpen(true);
                     Robot2014.shooterPunch.fire();
                     timer.reset();
@@ -210,7 +213,7 @@ public class AutonRunner {
                 }
                     break;
             case 6: //wait for shot to finish, then get ready to catch
-                if(timer.get() > .5) {
+                if(timer.get() > .75) {
                     Robot2014.intakeClaw.setClawOpen(false);
                     Robot2014.driveTrain.setLeftRightSpeed(0, 0);
                     Robot2014.intakeClaw.setIntakeRollerOutput(0.7);

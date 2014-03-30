@@ -51,7 +51,7 @@ public class RobotArm extends Team2791Subsystem {
     //this is an array of presets
     //the presets are as follows: AUTON_SHOT, LOADING, TELEOP_BACK_SHOT
     //65.5 old angle, 75.0 crazy pratice field angle
-    private static final double[] PRESET_VALUES = {22.5, 57.5, 90.0, 2.5};
+    private static final double[] PRESET_VALUES = {22.5, 57.5, 90.0, 2.5, 75.0};
     public boolean nearShooter = false;
     // arm sensor broken
     private final boolean angleSensorBrokenHard = false;
@@ -62,11 +62,12 @@ public class RobotArm extends Team2791Subsystem {
      //init the motors
         armMotor = new Victor(1, 3); //motor 3
         armPot = new AnalogChannel(1);
-        topSensor = new DigitalInput(10);
-        botSensor = new DigitalInput(12);
-        winchEncoder =  new Encoder(13, 14, false, CounterBase.EncodingType.k4X);
+        topSensor = new DigitalInput(13);
+        botSensor = new DigitalInput(14);
+        // was 10, 11 swapped with DT
+        winchEncoder =  new Encoder(10, 11, false, CounterBase.EncodingType.k4X);
         //pulses per rotation, gear reduction downstream of the encoder, degrees per rotation placeholder)
-        winchEncoder.setDistancePerPulse(1/64 * 64/20 * 1.0);
+        winchEncoder.setDistancePerPulse(1.0);
         calibrateWinchEncoder();
         
         
@@ -93,33 +94,21 @@ public class RobotArm extends Team2791Subsystem {
         if(angleSensorBrokenHard || angleSensorBrokenSoft) {
             usePID = false;
         } else {
-            // if there is a large difference between the arm angle and winch angle
-            // that means there's slack in the rope, change PID gains
-            if(getArmAngle() > 70) {
-//            if(getWinchArmDifference() > 3.0) {
-//                PID_P = Robot2014.prefs.getDouble("Arm-PID_P_WITH_SLACK",0.0);
-//                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
-//                armPID.changeGains(PID_P*(((getArmAngle()-70.0)/30.0+1.0)), 0.0, 0.0);
-//                armPID.changeDeadzone(PID_DEADZONE);
-//                armPID.reset();
-            } else { //normal PID gains
-//                PID_P = Robot2014.prefs.getDouble("Arm-PID_P",0.0);
-//                PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
-//                PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
-//                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
-//                armPID.changeGains(PID_P, PID_P, PID_P);
-//                armPID.changeDeadzone(PID_DEADZONE);
-            }
             if(usePID) {
                 double armAngle = getArmAngle();
                 double PID_output = armPID.updateAndGetOutput(armAngle);
                 if(armAngle > 84.0) {
-                    if(PID_output < -0.2)
-                        PID_output = -0.2;
-                    else if(PID_output > 0.2)
-                        PID_output = 0.2;
+                    if(PID_output < -0.4)
+                        PID_output = -0.4;
+                    else if(PID_output > 0.4)
+                        PID_output = 0.4;
                 }
                 setMotorOutputAdjusted(PID_output);
+//                if(getWinchArmDifference() > 5.0 || getWinchAngle() > 100.0) //if there's slack
+//                    setMotorOutputAdjusted(0.0);
+//                else //if there's slack stop the movement
+//                    setMotorOutputAdjusted(PID_output);
+//                    
             } else {
                 //do nothing the output has already been set without the PID
                 armPID.reset();
@@ -256,7 +245,7 @@ public class RobotArm extends Team2791Subsystem {
         return angle;
     }
     
-   public double getWinchAngle() { return winchEncoder.getDistance(); }
+   public double getWinchAngle() { return winchEncoder.getDistance() + winchEncoderOffset; }
    
    private double getWinchArmDifference() { return getWinchAngle() - getArmAngle(); }
    

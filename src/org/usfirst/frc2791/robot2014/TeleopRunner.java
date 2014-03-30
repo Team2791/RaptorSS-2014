@@ -111,7 +111,7 @@ public class TeleopRunner {
         
         if(Robot2014.operatorStick.getRawButton(4)) Robot2014.robotArm.goToPreset(0);
         else if(Robot2014.operatorStick.getRawButton(3)) Robot2014.robotArm.goToPreset(1);
-        else if(Robot2014.operatorStick.getRawButton(5)) Robot2014.robotArm.goToPreset(2);
+        else if(Robot2014.operatorStick.getRawButton(5)) Robot2014.robotArm.goToPreset(4);
         else if(Robot2014.operatorStick.getRawButton(8)) Robot2014.robotArm.goToPreset(3);
 //        else if(Robot2014.operatorStick.getTrigger()) PREP_SHOT = true;
 //        //ect
