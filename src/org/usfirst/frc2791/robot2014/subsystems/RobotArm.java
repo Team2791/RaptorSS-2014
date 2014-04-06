@@ -50,7 +50,7 @@ public class RobotArm extends Team2791Subsystem {
     
     //this is an array of presets
     //the presets are as follows: AUTON_SHOT, LOADING, TELEOP_BACK_SHOT
-    //65.5 old angle, 75.0 crazy pratice field angle
+    //65.5 old angle, 75.0 crazy pratice field angle //was 57.5
     private static final double[] PRESET_VALUES = {22.5, 57.5, 90.0, 2.5, 75.0};
     public boolean nearShooter = false;
     // arm sensor broken
