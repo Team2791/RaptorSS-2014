@@ -79,8 +79,8 @@ public class TeleopRunner {
 //        double throttle = 1.0 * Robot2014.driverLeftStick.getRawAxis(2);
 //        double turn = 1.0 * Robot2014.driverLeftStick.getRawAxis(4);
         //racecar drive
-        double throttle = 0.60* Robot2014.driverLeftStick.getRawAxis(3);
-        double turn = 0.60* Robot2014.driverLeftStick.getRawAxis(1);
+        double throttle =  Robot2014.driverLeftStick.getRawAxis(3);
+        double turn =  Robot2014.driverLeftStick.getRawAxis(1);
         
         leftSpeed = rightSpeed = -raiseToPower(throttle, 2.0);
         leftSpeed += raiseToPower(turn, 2.0);
@@ -113,11 +113,11 @@ public class TeleopRunner {
             groundPreset = Robot2014.operatorStick.getRawButton(8);
             killPIDButton = Robot2014.operatorStick.getRawButton(9);
         } else {
-            armManualMovement = Robot2014.operatorStick.getRawAxis(4);
-            bottomPreset = Robot2014.operatorStick.getRawButton(1);
+            armManualMovement = -Robot2014.operatorStick.getRawAxis(5);
+            bottomPreset = Robot2014.operatorStick.getRawButton(2);
             tenPointPreset = Robot2014.operatorStick.getRawButton(3);
             trussPreset = Robot2014.operatorStick.getRawButton(4);
-            groundPreset = Robot2014.operatorStick.getRawButton(2);
+            groundPreset = Robot2014.operatorStick.getRawButton(1);
             killPIDButton = Robot2014.operatorStick.getRawButton(10);
         }
         
@@ -160,6 +160,7 @@ public class TeleopRunner {
             shootButton = (Robot2014.driverLeftStick.getRawButton(8) || Robot2014.operatorStick.getTrigger());
             intakeOut = Robot2014.operatorStick.getRawButton(6);
             intakeIn = Robot2014.operatorStick.getRawButton(7);
+            
             manualClawOpen = Robot2014.operatorStick.getRawButton(2);
             fireOverride = Robot2014.operatorStick.getRawButton(11);
         } else {
@@ -190,29 +191,23 @@ public class TeleopRunner {
             manualClawControl = true;
         }
         if(shootButton && !autoCatch) { //trigger shooting
-            /// kill PID because overreacts to moving arm
-            Robot2014.robotArm.setMotorOutputManualAdjusted(0.0);
             //
             if(Robot2014.intakeClaw.getClawOpen()) {
                 Robot2014.shooterPunch.fire();
                 autoCloseTimer.reset();
             } else {
                 Robot2014.intakeClaw.setClawOpen(true);
-//                clawOpenLatch.setManual(true);
             }
             Robot2014.intakeClaw.setClawOpen(true);
             manualClawControl = false;
             
         } else if(fireOverride) {//no matter what shooting
-            Robot2014.shooterPunch.fire();
+            Robot2014.shooterPunch.fireOverride();
         } else if(manualClawControl && !autoCatch) {
             Robot2014.intakeClaw.setClawOpen(manualClawOpen);
-//            clawOpenLatch.setLatchInput(Robot2014.operatorStick.getRawButton(10));
-//            Robot2014.intakeClaw.setClawOpen(clawOpenLatch.get());
         } else { //control of the arm is by shooter delay
             if(autoCloseTimer.get() >= 1 && !autoCatch) {
                 Robot2014.intakeClaw.setClawOpen(false);
-//                clawOpenLatch.setManual(false);
             }
         }
         

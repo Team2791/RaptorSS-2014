@@ -54,14 +54,6 @@ public class ShooterPunch extends Team2791Subsystem {
         readSensors();
     }
     
-    public void test(){
-        if(Robot2014.operatorStick.getRawButton(8))
-            windingMotor.set(-.5);
-        else
-            windingMotor.set(0);
-        setReleaseSolonoid(Robot2014.operatorStick.getRawButton(9));
-    }
-    
     public void setEnabled(boolean enabledIn) { enabled = enabledIn; }
     public boolean getEnabled() { return enabled; }
     
@@ -76,7 +68,7 @@ public class ShooterPunch extends Team2791Subsystem {
        if(fire) { //if time to fire, well FIRE
            setReleaseSolonoid(true);
            sensorTimeoutTimer.reset();
-           fire = false;
+           pullingBack = false;
        }
        if(enabled) {
             if(!readyToFire()) {
@@ -85,6 +77,7 @@ public class ShooterPunch extends Team2791Subsystem {
                 if(pullingBack || !topSensor.get()) { //if hit the top sensor or after hit and still pulling
                     pullingBack = true;
                     setReleaseSolonoid(false);
+                    fire = false;
 //                    windingMotor.set(-0.8);
                     if(lastSensorHit == 0) //top sensor
                         setMotorSpeed(1.0);
@@ -136,17 +129,16 @@ public class ShooterPunch extends Team2791Subsystem {
     
     //this method fires if able and returns if it was able to fire or not
     public boolean fire() {
-       fire = true;
-//        fire = false;
-        return true;
-        //don't fire if you're not ready
-        
-//        if(readyToFire()) {
-//            fire = true;
-//            return true;
-//        } else {
-//            return false;
-//        }
+        if(readyToFire()) {
+            fire = true;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    public void fireOverride() {
+        fire = true;
     }
     
     public void disable() {
