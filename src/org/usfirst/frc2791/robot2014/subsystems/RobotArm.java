@@ -6,6 +6,7 @@ package org.usfirst.frc2791.robot2014.subsystems;
 
 import edu.wpi.first.wpilibj.AnalogChannel;
 import edu.wpi.first.wpilibj.CounterBase;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Victor;
@@ -27,6 +28,8 @@ public class RobotArm extends Team2791Subsystem {
     //FOR NOW ASSUME ENCODER THIS LIKELY WILL CHANGE TO AN ANALOG ABSOLUTE SENSOR!!!!
     public static AnalogChannel armPot;
     public static Encoder winchEncoder;
+    private static DigitalInput topSensor;
+    private static DigitalInput botSensor;
     private double winchEncoderOffset = 0.0;
     //reading = sensorRaw - offset
     static double MIN_ANGLE = Robot2014.getDoubleAutoPut("Arm-Min_Angle",3.0);
@@ -47,8 +50,8 @@ public class RobotArm extends Team2791Subsystem {
     
     //this is an array of presets
     //the presets are as follows: AUTON_SHOT, LOADING, TELEOP_BACK_SHOT
-    //65.5 old angle, 75.0 crazy pratice field angle
-    private static final double[] PRESET_VALUES = {22.5, 67.0, 90.0, 7.0};
+    //65.5 old angle, 75.0 crazy pratice field angle //was 57.5
+    private static final double[] PRESET_VALUES = {22.5, 57.5, 90.0, 2.5, 75.0};
     public boolean nearShooter = false;
     // arm sensor broken
     private final boolean angleSensorBrokenHard = false;
@@ -59,9 +62,12 @@ public class RobotArm extends Team2791Subsystem {
      //init the motors
         armMotor = new Victor(1, 3); //motor 3
         armPot = new AnalogChannel(1);
+        topSensor = new DigitalInput(13);
+        botSensor = new DigitalInput(14);
+        // was 10, 11 swapped with DT
         winchEncoder =  new Encoder(10, 11, false, CounterBase.EncodingType.k4X);
         //pulses per rotation, gear reduction downstream of the encoder, degrees per rotation placeholder)
-        winchEncoder.setDistancePerPulse(1/64 * 64/20 * 1.0);
+        winchEncoder.setDistancePerPulse(1.0);
         calibrateWinchEncoder();
         
         
@@ -88,33 +94,21 @@ public class RobotArm extends Team2791Subsystem {
         if(angleSensorBrokenHard || angleSensorBrokenSoft) {
             usePID = false;
         } else {
-            // if there is a large difference between the arm angle and winch angle
-            // that means there's slack in the rope, change PID gains
-            if(false) {
-//            if(getWinchArmDifference() > 3.0) {
-                PID_P = Robot2014.prefs.getDouble("Arm-PID_P_WITH_SLACK",0.0);
-                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE_WITH_SLACK",0.0);
-                armPID.changeGains(PID_P, 0.0, 0.0);
-                armPID.changeDeadzone(PID_DEADZONE);
-                armPID.reset();
-            } else { //normal PID gains
-                PID_P = Robot2014.prefs.getDouble("Arm-PID_P",0.0);
-                PID_I = Robot2014.prefs.getDouble("Arm-PID_I",0.0);
-                PID_D = Robot2014.prefs.getDouble("Arm-PID_D",0.0);
-                PID_DEADZONE = Robot2014.prefs.getDouble("Arm-PID_DEADZONE",0.0);
-                armPID.changeGains(PID_P, PID_P, PID_P);
-                armPID.changeDeadzone(PID_DEADZONE);
-            }
             if(usePID) {
                 double armAngle = getArmAngle();
                 double PID_output = armPID.updateAndGetOutput(armAngle);
                 if(armAngle > 84.0) {
-                    if(PID_output < -0.2)
-                        PID_output = -0.2;
-                    else if(PID_output > 0.2)
-                        PID_output = 0.2;
+                    if(PID_output < -0.4)
+                        PID_output = -0.4;
+                    else if(PID_output > 0.4)
+                        PID_output = 0.4;
                 }
                 setMotorOutputAdjusted(PID_output);
+//                if(getWinchArmDifference() > 5.0 || getWinchAngle() > 100.0) //if there's slack
+//                    setMotorOutputAdjusted(0.0);
+//                else //if there's slack stop the movement
+//                    setMotorOutputAdjusted(PID_output);
+//                    
             } else {
                 //do nothing the output has already been set without the PID
                 armPID.reset();
@@ -172,6 +166,10 @@ public class RobotArm extends Team2791Subsystem {
         SmartDashboard.putNumber("Arm output raw",output);
         SmartDashboard.putNumber("Arm FF output",-getFeedForward(armAngle));
         SmartDashboard.putNumber("Arm total output",output-getFeedForward(armAngle));
+        if(armAngle > 88.5) { //if the arm is up don't allow slacks
+            if(output < 0.0) //this is up, gets inverted later on, code could be better
+                output = 0.0;
+        }
         setMotorOutput(output - getFeedForward(armAngle));
     }
     
@@ -247,7 +245,7 @@ public class RobotArm extends Team2791Subsystem {
         return angle;
     }
     
-   public double getWinchAngle() { return winchEncoder.getDistance(); }
+   public double getWinchAngle() { return winchEncoder.getDistance() + winchEncoderOffset; }
    
    private double getWinchArmDifference() { return getWinchAngle() - getArmAngle(); }
    
@@ -257,8 +255,8 @@ public class RobotArm extends Team2791Subsystem {
      * @return the motor output feed forward value
      */
     private double getFeedForward(double angle) {
-        // arm weight + gas shock
-        return 0.148*Math.cos(angle/180*Math.PI + 0.05) - 0.22*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
+        // arm weight + gas shock (0.148 - 0.22)
+        return 0.148*Math.cos(angle/180*Math.PI + 0.05) - .236*Math.sin((116.26-angle)/180*Math.PI); // 0.148 orig, 0.165 pbot
     }
     
     public String getDebugString() {
@@ -279,5 +277,7 @@ public class RobotArm extends Team2791Subsystem {
         SmartDashboard.putBoolean("Arm near setpoint",nearSetpoint());
         SmartDashboard.putBoolean("Arm near setpoint moving",nearSetpointMoving());
         SmartDashboard.putBoolean("Arm sensor broken", angleSensorBrokenHard || angleSensorBrokenSoft);
+        SmartDashboard.putBoolean("Arm top stop", !topSensor.get());
+        SmartDashboard.putBoolean("Arm bot stop", !botSensor.get());
     }
 }

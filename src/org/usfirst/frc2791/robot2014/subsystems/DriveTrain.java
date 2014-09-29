@@ -41,6 +41,7 @@ public class DriveTrain extends Team2791Subsystem {
 
         //init encoders
         //Encoder(int aChannel, int bChannel, boolean reverseDirection, CounterBase.EncodingType encodingType)
+        //was 4, 5 swapped with arm winch
         driveTrainEncoderLeft = new Encoder(4, 5, RIGHT_SIDE_REVERSED, CounterBase.EncodingType.k4X);
         driveTrainEncoderRight = new Encoder(2, 3, !RIGHT_SIDE_REVERSED, CounterBase.EncodingType.k4X);
         //diamater of the wheel * pi = distance per rotation
