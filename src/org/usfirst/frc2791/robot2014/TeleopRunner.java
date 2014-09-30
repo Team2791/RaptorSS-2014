@@ -35,6 +35,8 @@ public class TeleopRunner {
     private static double armManualMovement;
     private static boolean shootButton, intakeOut, intakeIn, manualClawOpen, fireOverride;
     
+    public static boolean highgear_default = false;
+    
     public TeleopRunner() {
         autoCloseTimer.start();
         overrideArmAngleSensorTimer.start();
@@ -89,6 +91,10 @@ public class TeleopRunner {
         SmartDashboard.putNumber("Turn amount", turn);
         SmartDashboard.putNumber("DT Left speed", leftSpeed);
         SmartDashboard.putNumber("DT Right speed", rightSpeed);
+        if(Robot2014.driverLeftStick.getRawButton(1) == highgear_default)  {
+            leftSpeed *= 0.6;
+            rightSpeed *= 0.6;
+        }
         Robot2014.driveTrain.setLeftRightSpeed(leftSpeed, rightSpeed);
     }
     
@@ -118,7 +124,7 @@ public class TeleopRunner {
             tenPointPreset = Robot2014.operatorStick.getRawButton(3);
             trussPreset = Robot2014.operatorStick.getRawButton(4);
             groundPreset = Robot2014.operatorStick.getRawButton(1);
-            killPIDButton = Robot2014.operatorStick.getRawButton(10);
+            killPIDButton = Robot2014.operatorStick.getRawButton(8);
         }
         
         if(armManualMovement > OPEREATOR_STICK_DEAD_ZONE || 
@@ -157,16 +163,17 @@ public class TeleopRunner {
         //was button 11, now 9 to test
         autoCatch = false; //Robot2014.operatorStick.getRawButton(9); //could be button 10 too
         if(opereatorJoysitck) {
-            shootButton = (Robot2014.driverLeftStick.getRawButton(8) || Robot2014.operatorStick.getTrigger());
+            shootButton = (Robot2014.driverLeftStick.getRawButton(8) && Robot2014.operatorStick.getTrigger());
             intakeOut = Robot2014.operatorStick.getRawButton(6);
             intakeIn = Robot2014.operatorStick.getRawButton(7);
             
             manualClawOpen = Robot2014.operatorStick.getRawButton(2);
             fireOverride = Robot2014.operatorStick.getRawButton(11);
         } else {
-            shootButton = (Robot2014.driverLeftStick.getRawButton(8) || Robot2014.operatorStick.getRawButton(6));
-            intakeOut = Robot2014.operatorStick.getRawButton(8);
-            intakeIn = Robot2014.operatorStick.getRawButton(7);
+            //shootButton = (Robot2014.driverLeftStick.getRawButton(8) || Robot2014.operatorStick.getRawButton(6));
+            shootButton = ( Robot2014.operatorStick.getRawButton(6));
+            intakeOut = Robot2014.operatorStick.getRawAxis(3) < -0.5;
+            intakeIn = Robot2014.operatorStick.getRawAxis(3) > 0.5;
             manualClawOpen = Robot2014.operatorStick.getRawButton(5);
             fireOverride = Robot2014.operatorStick.getRawButton(9);
         }
@@ -206,7 +213,7 @@ public class TeleopRunner {
         } else if(manualClawControl && !autoCatch) {
             Robot2014.intakeClaw.setClawOpen(manualClawOpen);
         } else { //control of the arm is by shooter delay
-            if(autoCloseTimer.get() >= 1 && !autoCatch) {
+            if(autoCloseTimer.get() >= 0.5 && !autoCatch) {
                 Robot2014.intakeClaw.setClawOpen(false);
             }
         }

@@ -37,6 +37,9 @@ public class ShooterPunch extends Team2791Subsystem {
     //shooter again after a shot
     public final double SHOT_TIME = 1.0;
     private static boolean pullingBack = false;
+    //sometimes after the bottom sensor trips and the punch stops pulling back it backdrives and no sensors
+    //are hit, this is to let us still fire when that happens
+    private static boolean backdrive_cludge = false;
 //    private static boolean LOWERING = true;
     
     public ShooterPunch() {
@@ -64,6 +67,7 @@ public class ShooterPunch extends Team2791Subsystem {
         //fire, ect and choses an action based on that. Impliments a simple bang
         //bang controller for position
        readSensors();
+       SmartDashboard.putBoolean("Mechanical Backdrive Cludge", backdrive_cludge);
        //first thing first, if the shooter is not loaded load it
        if(fire) { //if time to fire, well FIRE
            setReleaseSolonoid(true);
@@ -84,12 +88,14 @@ public class ShooterPunch extends Team2791Subsystem {
                     else if(lastSensorHit == 1) //mid sensor
                         setMotorSpeed(0.50); //was -.80 then -.50
                 } else { //waiting for punch to hit top sensor
-                    pullingBack = true;
+                    
                     //wait and do nothing
                     setMotorSpeed(0);
                 }
             } else { //shooter is ready to fire
                 pullingBack = false;
+                //let us fire after we hit this stage, even if sensors aern't still tripped
+                backdrive_cludge = true;
                 setMotorSpeed(0); //turn off the winding motor
             }
        } else { //disabled
@@ -123,13 +129,14 @@ public class ShooterPunch extends Team2791Subsystem {
     }
     
     public boolean readyToFire() {
-        return !botSensor.get() || !botSensorBackup.get();
+        return !botSensor.get() || !botSensorBackup.get() || backdrive_cludge;
 //        return !midSensor.get();
     }
     
     //this method fires if able and returns if it was able to fire or not
     public boolean fire() {
         if(readyToFire()) {
+            backdrive_cludge = false; //don't let us fire twice
             fire = true;
             return true;
         } else {
@@ -142,6 +149,8 @@ public class ShooterPunch extends Team2791Subsystem {
     }
     
     public void disable() {
+        backdrive_cludge = false;
+        SmartDashboard.putBoolean("Mechanical Backdrive Cludge", backdrive_cludge);
         fire = false;
         setEnabled(false);
         sensorTimeoutTimer.reset();

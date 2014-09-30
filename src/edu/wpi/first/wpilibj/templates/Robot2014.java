@@ -142,6 +142,8 @@ public class Robot2014 extends IterativeRobot {
         compressor.stop();
         
         teleopRunner.setSafety(true);
+        double highgear_constant = Robot2014.getDoubleAutoPut("Highgear_default(1_is_yes)", 1.0);
+        teleopRunner.highgear_default = (highgear_constant < 1.1 && highgear_constant > 0.9);
         //when driver holds LB and RB recal the gyro, this is gonna cause some lag but that's okay for now
         if(Robot2014.driverLeftStick.getRawButton(5) && Robot2014.driverLeftStick.getRawButton(6)) {
             SmartDashboard.putBoolean("gyro calibrating", true);
