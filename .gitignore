@@ -1,4 +1,9 @@
+*.MF
+nbproject/*
+build.*
 .idea/*
+*.properties
+*.xml
 # Created by https://www.gitignore.io/api/intellij,eclipse,java
 
 ### Intellij ###
